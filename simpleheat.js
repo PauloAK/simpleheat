@@ -7,7 +7,7 @@ function simpleheat(canvas) {
 
     this._canvas = canvas = typeof canvas === 'string' ? document.getElementById(canvas) : canvas;
 
-    this._ctx = canvas.getContext('2d');
+    this._ctx = canvas.getContext('2d', { willReadFrequently: true });
     this._width = canvas.width;
     this._height = canvas.height;
 
@@ -52,7 +52,7 @@ simpleheat.prototype = {
 
         // create a grayscale blurred circle image that we'll use for drawing points
         var circle = this._circle = this._createCanvas(),
-            ctx = circle.getContext('2d'),
+            ctx = circle.getContext('2d', { willReadFrequently: true }),
             r2 = this._r = r + blur;
 
         circle.width = circle.height = r2 * 2;
@@ -77,7 +77,7 @@ simpleheat.prototype = {
     gradient: function (grad) {
         // create a 256x1 gradient that we'll use to turn a grayscale heatmap into a colored one
         var canvas = this._createCanvas(),
-            ctx = canvas.getContext('2d'),
+            ctx = canvas.getContext('2d', { willReadFrequently: true }),
             gradient = ctx.createLinearGradient(0, 0, 0, 256);
 
         canvas.width = 1;
@@ -106,20 +106,20 @@ simpleheat.prototype = {
         // draw a grayscale heatmap by putting a blurred circle at each data point
         for (var i = 0, len = this._data.length, p; i < len; i++) {
             p = this._data[i];
-            ctx.globalAlpha = Math.min(p[2] / this._max, 1);
+            ctx.globalAlpha = Math.min(Math.max(p[2] / this._max, minOpacity === undefined ? 0.05 : minOpacity), 1);
+            ctx.globalCompositeOperation = 'luminosity';
             ctx.drawImage(this._circle, p[0] - this._r, p[1] - this._r);
         }
 
         // colorize the heatmap, using opacity value of each pixel to get the right color from our gradient
         var colored = ctx.getImageData(0, 0, this._width, this._height);
-        this._colorize(colored.data, this._grad, minOpacity);
+        this._colorize(colored.data, this._grad);
         ctx.putImageData(colored, 0, 0);
 
         return this;
     },
 
-    _colorize: function (pixels, gradient, minOpacity) {
-        var minAlpha = 255 * (minOpacity || 0);
+    _colorize: function (pixels, gradient) {
         for (var i = 0, len = pixels.length, j; i < len; i += 4) {
             j = pixels[i + 3] * 4; // get gradient color from opacity value
 
@@ -127,7 +127,6 @@ simpleheat.prototype = {
                 pixels[i] = gradient[j];
                 pixels[i + 1] = gradient[j + 1];
                 pixels[i + 2] = gradient[j + 2];
-                pixels[i + 3] = Math.max(pixels[i + 3], minAlpha);
             }
         }
     },
