@@ -13,8 +13,6 @@ function simpleheat(canvas) {
 
     this._max = 1;
     this._data = [];
-    this._intensityBuffer = new Float32Array(this._width * this._height);
-    this._countBuffer = new Uint16Array(this._width * this._height); // Assumes no more than 65535 overlaps
 }
 
 simpleheat.prototype = {
@@ -54,7 +52,7 @@ simpleheat.prototype = {
 
         // create a grayscale blurred circle image that we'll use for drawing points
         var circle = this._circle = this._createCanvas(),
-            ctx = circle.getContext('2d', { willReadFrequently: true }),
+            ctx = circle.getContext('2d'),
             r2 = this._r = r + blur;
 
         circle.width = circle.height = r2 * 2;
@@ -79,7 +77,7 @@ simpleheat.prototype = {
     gradient: function (grad) {
         // create a 256x1 gradient that we'll use to turn a grayscale heatmap into a colored one
         var canvas = this._createCanvas(),
-            ctx = canvas.getContext('2d', { willReadFrequently: true }),
+            ctx = canvas.getContext('2d'),
             gradient = ctx.createLinearGradient(0, 0, 0, 256);
 
         canvas.width = 1;
@@ -102,54 +100,34 @@ simpleheat.prototype = {
         if (!this._grad) this.gradient(this.defaultGradient);
 
         var ctx = this._ctx;
-        var tempCanvas = document.createElement('canvas');
-        var tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = this._width;
-        tempCanvas.height = this._height;
 
         ctx.clearRect(0, 0, this._width, this._height);
-        tempCtx.clearRect(0, 0, this._width, this._height);
 
-        // Draw each point in a temporary canvas and calculate intensity
+        // draw a grayscale heatmap by putting a blurred circle at each data point
         for (var i = 0, len = this._data.length, p; i < len; i++) {
             p = this._data[i];
-            var intensity = Math.min(Math.max(p[2] / this._max, minOpacity === undefined ? 0.05 : minOpacity), 1);
-            tempCtx.globalAlpha = intensity;
-            tempCtx.drawImage(this._circle, p[0] - this._r, p[1] - this._r);
+            ctx.globalAlpha = Math.min(p[2] / this._max, 1);
+            ctx.drawImage(this._circle, p[0] - this._r, p[1] - this._r);
         }
 
-        // Accumulate intensities and counts
-        var tempData = tempCtx.getImageData(0, 0, this._width, this._height).data;
-        for (var y = 0; y < this._height; y++) {
-            for (var x = 0; x < this._width; x++) {
-                var idx = (y * this._width + x) * 4;
-                var alpha = tempData[idx + 3] / 255;
-                this._intensityBuffer[y * this._width + x] += alpha;
-                this._countBuffer[y * this._width + x] += 1;
-            }
-        }
-
-        // Colorize using the average intensity
+        // colorize the heatmap, using opacity value of each pixel to get the right color from our gradient
         var colored = ctx.getImageData(0, 0, this._width, this._height);
-        this._colorize(colored.data, this._grad, this._intensityBuffer, this._countBuffer);
+        this._colorize(colored.data, this._grad, minOpacity);
         ctx.putImageData(colored, 0, 0);
-
-        // Reset buffers
-        this._intensityBuffer.fill(0);
-        this._countBuffer.fill(0);
 
         return this;
     },
 
-    _colorize: function (pixels, gradient, intensityBuffer, countBuffer) {
-        for (var i = 0, len = pixels.length / 4; i < len; i++) {
-            if (countBuffer[i] > 0) {
-                var avgIntensity = intensityBuffer[i] / countBuffer[i];
-                var j = Math.floor(avgIntensity * 255) * 4;
-                pixels[i * 4] = gradient[j];
-                pixels[i * 4 + 1] = gradient[j + 1];
-                pixels[i * 4 + 2] = gradient[j + 2];
-                pixels[i * 4 + 3] = 255; // Full opacity
+    _colorize: function (pixels, gradient, minOpacity) {
+        var minAlpha = 255 * (minOpacity || 0);
+        for (var i = 0, len = pixels.length, j; i < len; i += 4) {
+            j = pixels[i + 3] * 4; // get gradient color from opacity value
+
+            if (j) {
+                pixels[i] = gradient[j];
+                pixels[i + 1] = gradient[j + 1];
+                pixels[i + 2] = gradient[j + 2];
+                pixels[i + 3] = Math.max(pixels[i + 3], minAlpha);
             }
         }
     },

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <style>
+        #canva {
+  border: 1px solid red;
+  height: 250px !important;
+  width: 250px !important;
+}
+    </style>
+
+    <canva id="canva" height="500" width="500"></canva>
+
+    <script>
+
+const canvas = document.createElement('canvas');
+
+const grad = {
+        0.4: 'blue',
+        0.6: 'cyan',
+        0.7: 'lime',
+        0.8: 'yellow',
+        1.0: 'red'
+    }
+
+let ctx = canvas.getContext('2d', { willReadFrequently: true }),
+            gradient = ctx.createLinearGradient(0, 0, 0, 256);
+
+        canvas.width = 1;
+        canvas.height = 256;
+
+        for (var i in grad) {
+            gradient.addColorStop(+i, grad[i]);
+        }
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 1, 256);
+
+const _grad = ctx.getImageData(0, 0, 1, 256).data;
+
+ctx.clearRect(0, 0, this._width, this._height);
+
+        // draw a grayscale heatmap by putting a blurred circle at each data point
+        for (var i = 0, len = this._data.length, p; i < len; i++) {
+            p = this._data[i];
+            ctx.globalAlpha = Math.min(Math.max(p[2] / this._max, minOpacity === undefined ? 0.05 : minOpacity), 1);
+            ctx.drawImage(this._circle, p[0] - this._r, p[1] - this._r);
+        }
+    </script>
+</body>
+</html>
