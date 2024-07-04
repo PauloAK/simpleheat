@@ -1,5 +1,5 @@
 {
-  "name": "@vgrid/simpleheat",
+  "name": "@pauloak/simpleheat",
   "version": "0.5.0",
   "description": "A tiny JavaScript library for drawing heatmaps with Canvas",
   "keywords": [
@@ -12,11 +12,12 @@
   ],
   "author": "Vladimir Agafonkin",
   "contributors": [
-    "Andres Cruz <39206515+acruzg@users.noreply.github.com>"
+    "Andres Cruz <39206515+acruzg@users.noreply.github.com>",
+    "Paulo Kramer"
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/vgrid/simpleheat.git"
+    "url": "git://github.com/PauloAK/simpleheat.git"
   },
   "main": "simpleheat.js",
   "scripts": {
